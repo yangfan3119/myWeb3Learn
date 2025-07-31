@@ -40,6 +40,10 @@ func (c *UserCtr) Register(ctx *gin.Context) {
 		utils.Error(ctx, http.StatusBadRequest, "用户信息获取异常.")
 		return
 	}
+	if u.Username == "" || u.Password == "" || u.Email == "" {
+		utils.Error(ctx, http.StatusBadRequest, "用户名、密码或邮箱不能为空")
+		return
+	}
 	// 验证用户名是否重复
 	var users = models.User{}
 	if err := mdb.Where("username=?", u.Username).First(&users).Error; err == nil {

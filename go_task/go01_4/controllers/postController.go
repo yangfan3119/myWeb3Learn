@@ -104,7 +104,7 @@ func (p *PostCtr) GetPost(ctx *gin.Context) {
 	postId := utils.StrIdToUint(ctx.Param("id"))
 	// 从数据库中查询文章
 	var dbpost models.Post
-	if err := mdb.Where("post_id=?", postId).First(&dbpost).Error; err != nil {
+	if err := mdb.Where("id=?", postId).First(&dbpost).Error; err != nil {
 		utils.Error(ctx, http.StatusBadRequest, "文章获取异常")
 		return
 	}
@@ -114,10 +114,17 @@ func (p *PostCtr) GetPost(ctx *gin.Context) {
 func (p *PostCtr) GetPostArray(ctx *gin.Context) {
 	page := utils.StrIdToInt(ctx.DefaultQuery("page", "1"))
 	limit := utils.StrIdToInt(ctx.DefaultQuery("limit", "30"))
+	if page < 1 || limit < 1 {
+		utils.Error(ctx, http.StatusBadRequest, "页码或每页数量参数错误")
+		return
+	}
+	if limit > 100 {
+		limit = 100 // 限制最大每页数量为100
+	}
 
 	offIndex := (page - 1) * limit
 	var posts []models.Post
-	if err := mdb.Order("create_at DESC").Offset(offIndex).Limit(limit).Find(&posts).Error; err != nil {
+	if err := mdb.Order("created_at DESC").Offset(offIndex).Limit(limit).Find(&posts).Error; err != nil {
 		utils.Error(ctx, http.StatusBadRequest, "文章获取异常")
 		return
 	}
