@@ -59,6 +59,7 @@ func JWTCheckUserAuth(cfg *config.BlogConfig) gin.HandlerFunc {
 		if err != nil {
 			utils.Error(ctx, http.StatusUnauthorized, "token验证异常")
 		} else {
+			mlog.Infoln("JWT验证通过,UserID:", jwt_UserID)
 			ctx.Set(CtxUserIDKey, jwt_UserID)
 			ctx.Next()
 		}

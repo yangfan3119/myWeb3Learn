@@ -24,6 +24,10 @@ func (p *PostCtr) Create(ctx *gin.Context) {
 		utils.Error(ctx, http.StatusBadRequest, "文章数据异常，无法保存。")
 		return
 	}
+	if new_post.Title == "" || new_post.Content == "" {
+		utils.Error(ctx, http.StatusBadRequest, "文章标题或内容不能为空")
+		return
+	}
 	userId, exists := ctx.Get(middlewares.CtxUserIDKey)
 	if !exists {
 		utils.Error(ctx, http.StatusBadRequest, "userID获取异常")

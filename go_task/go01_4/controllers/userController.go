@@ -91,7 +91,7 @@ func (c *UserCtr) Login(ctx *gin.Context) {
 		return
 	}
 	// 生成JWT
-	tokenString, err := utils.GenerateToken(getUser.Username, getUser.Password, dbUser.ID)
+	tokenString, err := utils.GenerateToken(getUser.Username, dbUser.ID)
 	if err != nil {
 		utils.Error(ctx, http.StatusUnauthorized, "Token生成异常")
 		return

@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -209,10 +210,11 @@ func TestCreatePostAuth(t *testing.T) {
 
 	// 先登录获取token
 	loginBody := `{"username":"user1","password":"pass1"}`
-	resp, err := http.Post(ts.URL+"/Login", "application/json", bytes.NewBufferString(loginBody))
+	resp, err := http.Post(ts.URL+"/login", "application/json", bytes.NewBufferString(loginBody))
 	if err != nil {
 		t.Fatalf("Login failed: %v", err)
 	}
+	fmt.Println("resp:", resp)
 	defer resp.Body.Close()
 	var loginResp map[string]interface{}
 	json.NewDecoder(resp.Body).Decode(&loginResp)
@@ -220,21 +222,32 @@ func TestCreatePostAuth(t *testing.T) {
 	if data, ok := loginResp["data"].(map[string]interface{}); ok {
 		token, _ = data["token"].(string)
 	}
+	fmt.Println("Token:", token)
 	if token == "" {
-		t.Skip("No token, skip auth test")
+		t.Errorf("No token, skip auth test")
 	}
 
 	// 创建文章
-	postBody := `{"title":"new post","content":"new content","user_id":1}`
-	req, _ := http.NewRequest("POST", ts.URL+"/post/create", bytes.NewBufferString(postBody))
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Content-Type", "application/json")
-	resp2, err := http.DefaultClient.Do(req)
-	if err != nil {
-		t.Fatalf("CreatePost failed: %v", err)
+	type test struct {
+		input  string
+		output int
 	}
-	defer resp2.Body.Close()
-	if resp2.StatusCode != http.StatusOK && resp2.StatusCode != http.StatusBadRequest {
-		t.Errorf("CreatePost: expected 200 or 400, got %d", resp2.StatusCode)
+	tests := map[string]test{
+		"No1": {input: `{"title":"New Post","content":"This is a new post"}`, output: http.StatusOK},
+		"No2": {input: `{"title":"","content":"This is a new post"}`, output: http.StatusBadRequest}, // 缺少标题
+		"No3": {input: `{"title":"New Post","content":""}`, output: http.StatusBadRequest},           // 缺少内容
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			req, _ := http.NewRequest("POST", ts.URL+"/post/create", bytes.NewBufferString(tc.input))
+			req.Header.Set("token", token)
+			req.Header.Set("Content-Type", "application/json")
+			resp2, err := http.DefaultClient.Do(req)
+			if err != nil {
+				t.Fatalf("CreatePost failed: %v", err)
+			}
+			defer resp2.Body.Close()
+			assert.Equal(t, tc.output, resp2.StatusCode)
+		})
 	}
 }
