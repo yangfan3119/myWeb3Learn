@@ -1,0 +1,4 @@
+sqlite_name: "./databases/blog.db"
+server_port: "8082"
+expire_hours: 12
+jwt_secret: "myBlogSecret"
