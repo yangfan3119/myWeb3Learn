@@ -1,5 +1,11 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity >0.8.0 <0.9.0;
+
+// 导入OpenZeppelin的ERC721标准实现和所有权管理库
+// ERC721是NFT的基础标准，Ownable用于权限控制（仅所有者可执行特定操作）
+// 用于安全铸造NFT（检查接收地址是否支持ERC721）
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
 /*
 作业2：在测试网上发行一个图文并茂的 NFT
@@ -32,4 +38,53 @@ pragma solidity ^0.8.20;
 5. 查看 NFT
 - 打开 OpenSea 测试网 或 Etherscan 测试网。
 - 连接你的钱包，查看你铸造的 NFT。
+
+0xa513E6E4b8f2a923D98304ec87F64353C4D5C853
 */
+contract task02_nft is ERC721 {
+    // 存储每个NFT的元数据URI（tokenId => 元数据地址）
+    mapping (uint256 => string) private  _tokenURIs;
+
+    uint256 private _nextTokenId;
+
+    address private _owner;
+
+    constructor(string memory _name, string memory _symble) ERC721(_name, _symble){
+        _owner = msg.sender;
+        _nextTokenId++;
+    }
+
+    modifier mOnlyOwner(){
+        require(msg.sender == _owner, "myERC20: only owner can call this function.");
+        _;
+    }
+
+    function mintNFT(address recipient, string memory uri)external mOnlyOwner returns(uint256){
+        require(recipient != address(0), "recipient address is not 0.");
+        require(bytes(uri).length > 0, "tokenURI is not null.");
+
+        // 获取tokenId，使用ERC721safeMint铸造绑定address和tokenId
+        uint256 tokenId = _nextTokenId;
+        _nextTokenId++;
+        _safeMint(recipient, tokenId);
+
+        // 关联address和URI地址
+        _tokenURIs[tokenId] = uri;
+
+        return tokenId;
+    }
+
+    function transferNFT(address from, address to, uint256 tokenId) external {
+        // 调用ERC721的转账函数，会自动检查权限
+        transferFrom(from, to, tokenId);
+    }
+
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        require(tokenExists(tokenId), "NFT tokenId is unexist.");
+        return _tokenURIs[tokenId];
+    }
+
+    function tokenExists(uint256 tokenId)private view returns(bool){
+        return (bytes(_tokenURIs[tokenId]).length != 0);
+    }
+}
